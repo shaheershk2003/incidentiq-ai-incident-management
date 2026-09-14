@@ -1,0 +1,478 @@
+<div class="page">
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <button
+        class="back-button"
+        (click)="goDashboard()"
+        title="Back to dashboard"
+      >
+        ←
+      </button>
+
+      <div class="logo">
+        IMS
+      </div>
+
+      <div>
+        <h1>Incidents</h1>
+
+        <p>
+          Monitor and manage production incidents
+        </p>
+      </div>
+
+    </div>
+
+    <div class="topbar-actions">
+
+      <button
+        class="dashboard-button"
+        (click)="goDashboard()"
+      >
+        Dashboard
+      </button>
+
+      <button
+        class="logout"
+        (click)="logout()"
+      >
+        Logout
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main>
+
+    <section class="page-header">
+
+      <div>
+
+        <h2>
+          Incident Management
+        </h2>
+
+        <p>
+          View, search and manage all reported incidents.
+        </p>
+
+      </div>
+
+      <button
+        class="create-button"
+        (click)="createIncident()"
+      >
+        + Create Incident
+      </button>
+
+    </section>
+
+
+    <section class="filters">
+
+      <div class="search-box">
+
+        <span class="search-icon">
+          ⌕
+        </span>
+
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+          placeholder="Search by ID, title, description or category..."
+        />
+
+      </div>
+
+
+      <select
+        [(ngModel)]="statusFilter"
+        (change)="applyFilters()"
+      >
+
+        <option value="ALL">
+          All Statuses
+        </option>
+
+        <option value="OPEN">
+          Open
+        </option>
+
+        <option value="IN_PROGRESS">
+          In Progress
+        </option>
+
+        <option value="RESOLVED">
+          Resolved
+        </option>
+
+        <option value="CLOSED">
+          Closed
+        </option>
+
+        <option value="REOPENED">
+          Reopened
+        </option>
+
+      </select>
+
+
+      <select
+        [(ngModel)]="priorityFilter"
+        (change)="applyFilters()"
+      >
+
+        <option value="ALL">
+          All Priorities
+        </option>
+
+        <option value="P1">
+          P1 - Critical
+        </option>
+
+        <option value="P2">
+          P2 - High
+        </option>
+
+        <option value="P3">
+          P3 - Medium
+        </option>
+
+        <option value="P4">
+          P4 - Low
+        </option>
+
+      </select>
+
+
+      <select
+        [(ngModel)]="sortOption"
+        (change)="onSortChange()"
+      >
+
+        <option value="NEWEST">
+          Newest First
+        </option>
+
+        <option value="OLDEST">
+          Oldest First
+        </option>
+
+        <option value="PRIORITY_HIGH">
+          Priority: High to Low
+        </option>
+
+        <option value="PRIORITY_LOW">
+          Priority: Low to High
+        </option>
+
+      </select>
+
+
+      <button
+        class="clear-button"
+        (click)="clearFilters()"
+      >
+        Clear
+      </button>
+
+    </section>
+
+
+    <section class="content-panel">
+
+      <div class="panel-header">
+
+        <div>
+
+          <h3>
+            All Incidents
+          </h3>
+
+          <span>
+            Showing
+            {{ filteredIncidents.length }}
+            of
+            {{ incidents.length }}
+            incidents
+          </span>
+
+        </div>
+
+
+        <button
+          class="refresh-button"
+          (click)="loadIncidents()"
+          [disabled]="loading"
+        >
+          ↻ Refresh
+        </button>
+
+      </div>
+
+
+      <div
+        *ngIf="loading"
+        class="state"
+      >
+
+        <div class="spinner"></div>
+
+        <p>
+          Loading incidents...
+        </p>
+
+      </div>
+
+
+      <div
+        *ngIf="
+          !loading &&
+          errorMessage
+        "
+        class="error-state"
+      >
+
+        <strong>
+          Unable to load incidents
+        </strong>
+
+        <p>
+          {{ errorMessage }}
+        </p>
+
+        <button
+          class="retry-button"
+          (click)="loadIncidents()"
+        >
+          Try Again
+        </button>
+
+      </div>
+
+
+      <div
+        *ngIf="
+          !loading &&
+          !errorMessage &&
+          incidents.length > 0 &&
+          filteredIncidents.length === 0
+        "
+        class="state"
+      >
+
+        <div class="empty-icon">
+          ⌕
+        </div>
+
+        <h3>
+          No matching incidents
+        </h3>
+
+        <p>
+          Try changing your search or filters.
+        </p>
+
+        <button
+          class="retry-button"
+          (click)="clearFilters()"
+        >
+          Clear Filters
+        </button>
+
+      </div>
+
+
+      <div
+        *ngIf="
+          !loading &&
+          !errorMessage &&
+          incidents.length === 0
+        "
+        class="state"
+      >
+
+        <div class="empty-icon">
+          ✓
+        </div>
+
+        <h3>
+          No incidents found
+        </h3>
+
+        <p>
+          There are currently no incidents in the system.
+        </p>
+
+      </div>
+
+
+      <div
+        class="table-wrapper"
+        *ngIf="
+          !loading &&
+          !errorMessage &&
+          filteredIncidents.length > 0
+        "
+      >
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Incident
+              </th>
+
+              <th>
+                Title
+              </th>
+
+              <th>
+                Category
+              </th>
+
+              <th>
+                Priority
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Created
+              </th>
+
+              <th></th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            <tr
+              *ngFor="
+                let incident of filteredIncidents
+              "
+              (click)="viewIncident(incident.id)"
+            >
+
+              <td>
+
+                <span class="incident-number">
+                  {{ incident.incidentNumber }}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <div class="title-cell">
+
+                  <strong>
+                    {{ incident.title }}
+                  </strong>
+
+                  <span>
+                    {{ incident.description }}
+                  </span>
+
+                </div>
+
+              </td>
+
+
+              <td>
+
+                <span class="category">
+                  {{ incident.category }}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <span
+                  class="priority"
+                  [ngClass]="
+                    getPriorityClass(
+                      incident.priority
+                    )
+                  "
+                >
+                  {{ incident.priority }}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <span
+                  class="status"
+                  [ngClass]="
+                    getStatusClass(
+                      incident.status
+                    )
+                  "
+                >
+
+                  <span class="status-dot"></span>
+
+                  {{
+                    formatStatus(
+                      incident.status
+                    )
+                  }}
+
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <span class="date">
+                  {{
+                    incident.createdAt
+                      | date:'dd MMM yyyy, HH:mm'
+                  }}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <span class="arrow">
+                  →
+                </span>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>

@@ -1,0 +1,508 @@
+<div class="page">
+
+  <header class="topbar">
+
+    <div class="brand">
+      <div class="brand-mark">I</div>
+
+      <div>
+        <h1>Incident Management System</h1>
+        <span>Operational Dashboard</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+
+      <button
+        class="nav-button active"
+        type="button"
+      >
+        Dashboard
+      </button>
+
+      <button
+        class="nav-button"
+        type="button"
+        (click)="goIncidents()"
+      >
+        Incidents
+      </button>
+
+      <button
+        class="logout-button"
+        type="button"
+        (click)="logout()"
+      >
+        Logout
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main class="content">
+
+    <div class="page-heading">
+
+      <div>
+        <h2>Incident Dashboard</h2>
+        <p>
+          Monitor incident volume, priority, status and recent activity.
+        </p>
+      </div>
+
+      <button
+        class="create-button"
+        type="button"
+        (click)="createIncident()"
+      >
+        + Create Incident
+      </button>
+
+    </div>
+
+
+    <!-- Loading -->
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+      <div class="spinner"></div>
+      <span>Loading dashboard...</span>
+    </div>
+
+
+    <!-- Error -->
+
+    <div
+      class="error-banner"
+      *ngIf="!loading && errorMessage"
+    >
+      <strong>Unable to load dashboard</strong>
+      <span>{{ errorMessage }}</span>
+
+      <button
+        type="button"
+        (click)="loadDashboard()"
+      >
+        Retry
+      </button>
+    </div>
+
+
+    <ng-container *ngIf="!loading && !errorMessage">
+
+      <!-- KPI CARDS -->
+
+      <section class="stats-grid">
+
+        <div class="stat-card total">
+          <div class="stat-top">
+            <span>Total Incidents</span>
+            <div class="stat-icon">Σ</div>
+          </div>
+
+          <strong>{{ stats.total }}</strong>
+
+          <p>All recorded incidents</p>
+        </div>
+
+
+        <div class="stat-card open">
+          <div class="stat-top">
+            <span>Open</span>
+            <div class="stat-icon">O</div>
+          </div>
+
+          <strong>{{ stats.open }}</strong>
+
+          <p>Awaiting investigation</p>
+        </div>
+
+
+        <div class="stat-card progress">
+          <div class="stat-top">
+            <span>In Progress</span>
+            <div class="stat-icon">↻</div>
+          </div>
+
+          <strong>{{ stats.inProgress }}</strong>
+
+          <p>Currently being investigated</p>
+        </div>
+
+
+        <div class="stat-card resolved">
+          <div class="stat-top">
+            <span>Resolved</span>
+            <div class="stat-icon">✓</div>
+          </div>
+
+          <strong>{{ stats.resolved }}</strong>
+
+          <p>Successfully resolved</p>
+        </div>
+
+      </section>
+
+
+      <!-- MAIN ANALYTICS -->
+
+      <section class="analytics-grid">
+
+        <!-- STATUS -->
+
+        <div class="panel">
+
+          <div class="panel-header">
+            <div>
+              <h3>Incident Status</h3>
+              <p>Current distribution by lifecycle status</p>
+            </div>
+          </div>
+
+
+          <div class="distribution">
+
+            <div class="distribution-row">
+
+              <div class="distribution-label">
+                <span class="status-dot open-dot"></span>
+                <span>Open</span>
+              </div>
+
+              <strong>{{ stats.open }}</strong>
+
+              <div class="bar">
+                <div
+                  class="bar-fill"
+                  [style.width.%]="getStatusPercentage('OPEN')"
+                ></div>
+              </div>
+
+              <span class="percentage">
+                {{ getStatusPercentage('OPEN') }}%
+              </span>
+
+            </div>
+
+
+            <div class="distribution-row">
+
+              <div class="distribution-label">
+                <span class="status-dot progress-dot"></span>
+                <span>In Progress</span>
+              </div>
+
+              <strong>{{ stats.inProgress }}</strong>
+
+              <div class="bar">
+                <div
+                  class="bar-fill"
+                  [style.width.%]="getStatusPercentage('IN_PROGRESS')"
+                ></div>
+              </div>
+
+              <span class="percentage">
+                {{ getStatusPercentage('IN_PROGRESS') }}%
+              </span>
+
+            </div>
+
+
+            <div class="distribution-row">
+
+              <div class="distribution-label">
+                <span class="status-dot resolved-dot"></span>
+                <span>Resolved</span>
+              </div>
+
+              <strong>{{ stats.resolved }}</strong>
+
+              <div class="bar">
+                <div
+                  class="bar-fill"
+                  [style.width.%]="getStatusPercentage('RESOLVED')"
+                ></div>
+              </div>
+
+              <span class="percentage">
+                {{ getStatusPercentage('RESOLVED') }}%
+              </span>
+
+            </div>
+
+
+            <div class="distribution-row">
+
+              <div class="distribution-label">
+                <span class="status-dot closed-dot"></span>
+                <span>Closed</span>
+              </div>
+
+              <strong>{{ stats.closed }}</strong>
+
+              <div class="bar">
+                <div
+                  class="bar-fill"
+                  [style.width.%]="getStatusPercentage('CLOSED')"
+                ></div>
+              </div>
+
+              <span class="percentage">
+                {{ getStatusPercentage('CLOSED') }}%
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- PRIORITY -->
+
+        <div class="panel">
+
+          <div class="panel-header">
+            <div>
+              <h3>Priority Distribution</h3>
+              <p>Incidents grouped by severity priority</p>
+            </div>
+          </div>
+
+
+          <div class="priority-list">
+
+            <div class="priority-row">
+              <div class="priority-label">
+                <span class="priority-badge p1">P1</span>
+                <span>Critical</span>
+              </div>
+
+              <strong>{{ priorityStats.P1 }}</strong>
+
+              <div class="priority-bar">
+                <div
+                  class="priority-fill p1-fill"
+                  [style.width.%]="getPriorityPercentage('P1')"
+                ></div>
+              </div>
+            </div>
+
+
+            <div class="priority-row">
+              <div class="priority-label">
+                <span class="priority-badge p2">P2</span>
+                <span>High</span>
+              </div>
+
+              <strong>{{ priorityStats.P2 }}</strong>
+
+              <div class="priority-bar">
+                <div
+                  class="priority-fill p2-fill"
+                  [style.width.%]="getPriorityPercentage('P2')"
+                ></div>
+              </div>
+            </div>
+
+
+            <div class="priority-row">
+              <div class="priority-label">
+                <span class="priority-badge p3">P3</span>
+                <span>Medium</span>
+              </div>
+
+              <strong>{{ priorityStats.P3 }}</strong>
+
+              <div class="priority-bar">
+                <div
+                  class="priority-fill p3-fill"
+                  [style.width.%]="getPriorityPercentage('P3')"
+                ></div>
+              </div>
+            </div>
+
+
+            <div class="priority-row">
+              <div class="priority-label">
+                <span class="priority-badge p4">P4</span>
+                <span>Low</span>
+              </div>
+
+              <strong>{{ priorityStats.P4 }}</strong>
+
+              <div class="priority-bar">
+                <div
+                  class="priority-fill p4-fill"
+                  [style.width.%]="getPriorityPercentage('P4')"
+                ></div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- BOTTOM -->
+
+      <section class="bottom-grid">
+
+        <!-- RECENT INCIDENTS -->
+
+        <div class="panel recent-panel">
+
+          <div class="panel-header">
+
+            <div>
+              <h3>Recent Incidents</h3>
+              <p>Latest incidents created in the system</p>
+            </div>
+
+            <button
+              type="button"
+              class="view-all"
+              (click)="goIncidents()"
+            >
+              View all →
+            </button>
+
+          </div>
+
+
+          <div
+            class="empty-state"
+            *ngIf="recentIncidents.length === 0"
+          >
+            No incidents have been created yet.
+          </div>
+
+
+          <div
+            class="incident-list"
+            *ngIf="recentIncidents.length > 0"
+          >
+
+            <div
+              class="incident-row"
+              *ngFor="let incident of recentIncidents"
+              (click)="viewIncident(incident.id)"
+            >
+
+              <div class="incident-main">
+
+                <strong>
+                  {{ incident.incidentNumber || ('INC-' + incident.id) }}
+                </strong>
+
+                <span>
+                  {{ incident.title }}
+                </span>
+
+              </div>
+
+
+              <div class="incident-category">
+                {{ formatCategory(incident.category) }}
+              </div>
+
+
+              <span
+                class="priority-badge"
+                [ngClass]="getPriorityClass(incident.priority)"
+              >
+                {{ incident.priority }}
+              </span>
+
+
+              <span
+                class="status-badge"
+                [ngClass]="getStatusClass(incident.status)"
+              >
+                {{ formatStatus(incident.status) }}
+              </span>
+
+
+              <span class="incident-date">
+                {{ formatDate(incident.createdAt) }}
+              </span>
+
+
+              <span class="row-arrow">→</span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- CRITICAL -->
+
+        <div class="panel critical-panel">
+
+          <div class="panel-header">
+
+            <div>
+              <h3>Critical Incidents</h3>
+              <p>Highest-priority incidents requiring attention</p>
+            </div>
+
+          </div>
+
+
+          <div
+            class="empty-state"
+            *ngIf="criticalIncidents.length === 0"
+          >
+            <div class="empty-icon">✓</div>
+            <strong>No P1 incidents</strong>
+            <span>No critical incidents currently recorded.</span>
+          </div>
+
+
+          <div
+            class="critical-list"
+            *ngIf="criticalIncidents.length > 0"
+          >
+
+            <div
+              class="critical-item"
+              *ngFor="let incident of criticalIncidents"
+              (click)="viewIncident(incident.id)"
+            >
+
+              <div class="critical-number">
+                {{ incident.incidentNumber }}
+              </div>
+
+              <div class="critical-title">
+                {{ incident.title }}
+              </div>
+
+              <span
+                class="status-badge"
+                [ngClass]="getStatusClass(incident.status)"
+              >
+                {{ formatStatus(incident.status) }}
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </ng-container>
+
+  </main>
+
+</div>

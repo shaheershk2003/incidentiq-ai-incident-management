@@ -1,0 +1,418 @@
+<div class="page">
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="brand-mark">
+        IQ
+      </div>
+
+      <div>
+        <h1>
+          IncidentIQ
+        </h1>
+
+        <span>
+          AI Incident Management
+        </span>
+      </div>
+
+    </div>
+
+    <div class="topbar-actions">
+
+      <button
+        class="nav-button"
+        type="button"
+        (click)="goDashboard()"
+      >
+        Dashboard
+      </button>
+
+      <button
+        class="logout-button"
+        type="button"
+        (click)="logout()"
+      >
+        Logout
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main class="content">
+
+    <div class="page-heading">
+
+      <div>
+
+        <button
+          class="back-button"
+          type="button"
+          (click)="cancel()"
+        >
+          ← Back to Incidents
+        </button>
+
+        <h2>
+          Create Incident
+        </h2>
+
+        <p>
+          Report a new incident and provide the information
+          required for investigation and resolution.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <section class="form-card">
+
+      <div class="form-header">
+
+        <div>
+
+          <h3>
+            Incident Information
+          </h3>
+
+          <p>
+            Fields marked with
+            <span>*</span>
+            are required.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        *ngIf="errorMessage"
+        class="error-banner"
+      >
+
+        <div class="error-icon">
+          !
+        </div>
+
+        <div>
+
+          <strong>
+            Unable to create incident
+          </strong>
+
+          <p>
+            {{ errorMessage }}
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <form
+        (ngSubmit)="createIncident()"
+        novalidate
+      >
+
+        <!-- INCIDENT TITLE -->
+
+        <div class="form-group">
+
+          <label for="title">
+            Incident Title
+            <span>*</span>
+          </label>
+
+          <input
+            id="title"
+            type="text"
+            name="title"
+            [(ngModel)]="incident.title"
+            placeholder="e.g. Production payment service unavailable"
+            maxlength="200"
+            autocomplete="off"
+          />
+
+          <div
+            class="field-error"
+            *ngIf="
+              submitted &&
+              !incident.title.trim()
+            "
+          >
+            Incident title is required.
+          </div>
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+
+        <div class="form-group">
+
+          <label for="description">
+            Description
+            <span>*</span>
+          </label>
+
+          <textarea
+            id="description"
+            name="description"
+            [(ngModel)]="incident.description"
+            placeholder="Describe what happened, the impact, affected systems, and any known symptoms..."
+            rows="7"
+            maxlength="2000"
+          ></textarea>
+
+          <div class="field-footer">
+
+            <div
+              class="field-error"
+              *ngIf="
+                submitted &&
+                !incident.description.trim()
+              "
+            >
+              Incident description is required.
+            </div>
+
+            <span class="character-count">
+              {{ incident.description.length }}/2000
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- PRIORITY + CATEGORY -->
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label for="priority">
+              Priority
+              <span>*</span>
+            </label>
+
+            <select
+              id="priority"
+              name="priority"
+              [(ngModel)]="incident.priority"
+            >
+
+              <option
+                *ngFor="
+                  let priority of priorities
+                "
+                [value]="priority"
+              >
+                {{ priority }}
+              </option>
+
+            </select>
+
+            <p class="helper-text">
+              P1 represents the highest business impact.
+            </p>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="category">
+              Category
+              <span>*</span>
+            </label>
+
+            <select
+              id="category"
+              name="category"
+              [(ngModel)]="incident.category"
+            >
+
+              <option
+                *ngFor="
+                  let category of categories
+                "
+                [value]="category"
+              >
+                {{ category }}
+              </option>
+
+            </select>
+
+            <p class="helper-text">
+              Select the system or domain affected by the incident.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- INCIDENT SNAPSHOT -->
+
+        <div class="form-group snapshot-group">
+
+          <label for="snapshot">
+            Incident Snapshot
+
+            <span class="optional-label">
+              Optional
+            </span>
+
+          </label>
+
+          <p class="helper-text">
+            Attach a screenshot showing the error, affected screen,
+            logs or other visual evidence related to the incident.
+          </p>
+
+
+          <div class="snapshot-upload">
+
+            <input
+              id="snapshot"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="onSnapshotSelected($event)"
+            />
+
+            <label
+              for="snapshot"
+              class="snapshot-upload-button"
+            >
+              📷 Add Snapshot
+            </label>
+
+            <span class="snapshot-file-hint">
+              JPG, PNG or WebP · Max 5 MB
+            </span>
+
+          </div>
+
+
+          <!-- SNAPSHOT PREVIEW -->
+
+          <div
+            class="snapshot-preview"
+            *ngIf="snapshotData"
+          >
+
+            <div class="snapshot-preview-header">
+
+              <div>
+
+                <strong>
+                  Snapshot attached
+                </strong>
+
+                <span>
+                  {{ snapshotName }}
+                </span>
+
+              </div>
+
+              <button
+                type="button"
+                class="remove-snapshot-button"
+                (click)="removeSnapshot()"
+              >
+                Remove
+              </button>
+
+            </div>
+
+
+            <img
+              [src]="snapshotData"
+              alt="Incident snapshot preview"
+            />
+
+          </div>
+
+        </div>
+
+
+        <!-- INFORMATION NOTE -->
+
+        <div class="form-note">
+
+          <div class="note-icon">
+            i
+          </div>
+
+          <div>
+
+            <strong>
+              What happens after creation?
+            </strong>
+
+            <p>
+              The system will automatically generate an incident number,
+              set the initial status to <strong>OPEN</strong>, record the
+              creator, save the incident snapshot if provided, and create
+              an activity audit event.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- ACTION BUTTONS -->
+
+        <div class="form-actions">
+
+          <button
+            class="cancel-button"
+            type="button"
+            (click)="cancel()"
+            [disabled]="loading"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            class="submit-button"
+            type="submit"
+            [disabled]="loading"
+          >
+
+            <span *ngIf="!loading">
+              Create Incident
+            </span>
+
+            <span
+              *ngIf="loading"
+              class="loading-content"
+            >
+
+              <span class="spinner"></span>
+
+              Creating...
+
+            </span>
+
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+  </main>
+
+</div>

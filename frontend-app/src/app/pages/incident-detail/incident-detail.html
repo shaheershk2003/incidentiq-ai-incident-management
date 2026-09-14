@@ -1,0 +1,1095 @@
+<div class="page">
+
+  <!-- =====================================================
+       HEADER
+       ===================================================== -->
+
+  <header class="page-header">
+
+    <div class="header-left">
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()">
+        ← Back to Incidents
+      </button>
+
+      <div class="title-section">
+
+        <div class="eyebrow">
+          Incident Management
+        </div>
+
+        <h1>
+          {{ incident?.incidentNumber || 'Incident Details' }}
+        </h1>
+
+        <p class="page-subtitle">
+          View incident information, activity, comments and AI recommendations.
+        </p>
+
+      </div>
+
+    </div>
+
+    <div class="header-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="loadIncident()"
+        [disabled]="loading || actionLoading">
+        {{ loading ? 'Refreshing...' : 'Refresh' }}
+      </button>
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="logout()">
+        Logout
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       LOADING
+       ===================================================== -->
+
+  <div
+    class="loading-state"
+    *ngIf="loading">
+
+    <div class="loading-spinner"></div>
+
+    <p>
+      Loading incident details...
+    </p>
+
+  </div>
+
+
+  <!-- =====================================================
+       ERROR
+       ===================================================== -->
+
+  <div
+    class="error-state"
+    *ngIf="!loading && errorMessage">
+
+    <div class="error-icon">
+      !
+    </div>
+
+    <div>
+      <h3>
+        Unable to load incident
+      </h3>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="secondary-button"
+      (click)="loadIncident()">
+      Try Again
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       MAIN CONTENT
+       ===================================================== -->
+
+  <main
+    class="content"
+    *ngIf="!loading && incident">
+
+
+    <!-- ===================================================
+         INCIDENT OVERVIEW
+         =================================================== -->
+
+    <section class="card incident-overview">
+
+      <div class="card-header">
+
+        <div>
+
+          <div class="card-eyebrow">
+            Incident Overview
+          </div>
+
+          <h2>
+            {{ incident.title }}
+          </h2>
+
+          <p class="card-description">
+            Complete incident information and current state.
+          </p>
+
+        </div>
+
+        <div class="incident-badges">
+
+          <span
+            class="priority-badge"
+            [ngClass]="getPriorityClass(incident.priority)">
+            {{ incident.priority }}
+          </span>
+
+          <span
+            class="status-badge"
+            [ngClass]="getStatusClass(incident.status)">
+            {{ formatStatus(incident.status) }}
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div class="incident-description">
+
+        <h3>
+          Description
+        </h3>
+
+        <p>
+          {{ incident.description }}
+        </p>
+
+      </div>
+
+
+      <div class="incident-information">
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Incident Number
+          </span>
+
+          <span class="info-value">
+            {{ incident.incidentNumber }}
+          </span>
+
+        </div>
+
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Category
+          </span>
+
+          <span class="info-value">
+            {{ formatCategory(incident.category) }}
+          </span>
+
+        </div>
+
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Priority
+          </span>
+
+          <span class="info-value">
+            {{ incident.priority }}
+          </span>
+
+        </div>
+
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Status
+          </span>
+
+          <span class="info-value">
+            {{ formatStatus(incident.status) }}
+          </span>
+
+        </div>
+
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Assigned To
+          </span>
+
+          <span class="info-value">
+            {{ getAssignedUserName(incident.assignedTo) }}
+          </span>
+
+        </div>
+
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Created By
+          </span>
+
+          <span class="info-value">
+            User #{{ incident.createdBy }}
+          </span>
+
+        </div>
+
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Created
+          </span>
+
+          <span class="info-value">
+            {{ incident.createdAt | date:'dd MMM yyyy, hh:mm a' }}
+          </span>
+
+        </div>
+
+
+        <div class="info-item">
+
+          <span class="info-label">
+            Last Updated
+          </span>
+
+          <span class="info-value">
+            {{ incident.updatedAt | date:'dd MMM yyyy, hh:mm a' }}
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         MANAGEMENT
+         ADMIN ONLY
+         =================================================== -->
+
+    <section
+      class="card management-card"
+      *ngIf="isAdmin()">
+
+      <div class="card-header">
+
+        <div>
+
+          <div class="card-eyebrow">
+            Management
+          </div>
+
+          <h2>
+            Incident Controls
+          </h2>
+
+          <p class="card-description">
+            Update the incident status or assign it to an active team member.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="management-controls">
+
+        <!-- STATUS -->
+
+        <div class="management-control">
+
+          <label for="status">
+            Update Status
+          </label>
+
+          <div class="control-row">
+
+            <select
+              id="status"
+              [(ngModel)]="selectedStatus">
+
+              <option value="OPEN">
+                Open
+              </option>
+
+              <option value="IN_PROGRESS">
+                In Progress
+              </option>
+
+              <option value="RESOLVED">
+                Resolved
+              </option>
+
+              <option value="CLOSED">
+                Closed
+              </option>
+
+              <option value="REOPENED">
+                Reopened
+              </option>
+
+            </select>
+
+            <button
+              type="button"
+              class="primary-button"
+              (click)="updateStatus()"
+              [disabled]="actionLoading || selectedStatus === incident.status">
+
+              {{ actionLoading ? 'Updating...' : 'Update' }}
+
+            </button>
+
+          </div>
+
+          <p class="control-hint">
+            Change the current incident lifecycle status.
+          </p>
+
+        </div>
+
+
+        <!-- ASSIGNMENT -->
+
+        <div class="management-control">
+
+          <label for="assignee">
+            Assign Incident
+          </label>
+
+          <div class="control-row">
+
+            <select
+              id="assignee"
+              [(ngModel)]="selectedAssignee">
+
+              <option [ngValue]="null">
+                Unassigned
+              </option>
+
+              <option
+                *ngFor="let user of users"
+                [ngValue]="user.id">
+
+                {{ user.name }} — {{ user.role }}
+
+              </option>
+
+            </select>
+
+            <button
+              type="button"
+              class="primary-button"
+              (click)="assignIncident()"
+              [disabled]="assignmentLoading">
+
+              {{ assignmentLoading ? 'Assigning...' : 'Assign' }}
+
+            </button>
+
+          </div>
+
+          <p class="control-hint">
+            Assign this incident to an active support team member.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         AI ANALYSIS
+         ADMIN + AGENT
+         =================================================== -->
+
+    <section
+      class="card"
+      *ngIf="canUseAI()">
+
+      <div class="card-header ai-header">
+
+        <div>
+
+          <div class="card-eyebrow">
+            AI Analysis
+          </div>
+
+          <h2>
+            Intelligent Incident Analysis
+          </h2>
+
+          <p class="card-description">
+            Analyze this incident to identify severity, possible cause,
+            troubleshooting steps and recommended resolution.
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          class="ai-button"
+          (click)="analyzeIncident()"
+          [disabled]="analysisLoading">
+
+          {{ analysisLoading ? 'Analyzing...' : 'Analyze Incident' }}
+
+        </button>
+
+      </div>
+
+
+      <!-- EMPTY AI STATE -->
+
+      <div
+        class="ai-empty"
+        *ngIf="!aiAnalysis">
+
+        <div class="empty-icon">
+          ✦
+        </div>
+
+        <h3>
+          AI analysis is ready
+        </h3>
+
+        <p>
+          Run AI analysis to generate an incident category,
+          severity, possible cause, troubleshooting guidance
+          and recommended resolution.
+        </p>
+
+      </div>
+
+
+      <!-- AI RESULT -->
+
+      <div
+        class="ai-analysis"
+        *ngIf="aiAnalysis">
+
+
+        <!-- SUMMARY GRID -->
+
+        <div class="analysis-grid">
+
+          <div class="analysis-item">
+
+            <span class="analysis-label">
+              Category
+            </span>
+
+            <strong>
+              {{ getAnalysisCategory() }}
+            </strong>
+
+          </div>
+
+
+          <div class="analysis-item">
+
+            <span class="analysis-label">
+              Severity
+            </span>
+
+            <strong
+              [ngClass]="getSeverityClass(aiAnalysis.severity)">
+
+              {{ getAnalysisSeverity() }}
+
+            </strong>
+
+          </div>
+
+
+          <div class="analysis-item">
+
+            <span class="analysis-label">
+              Confidence
+            </span>
+
+            <strong>
+              {{ getAnalysisConfidence() }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- SUMMARY -->
+
+        <div class="analysis-section">
+
+          <h3>
+            AI Summary
+          </h3>
+
+          <p>
+            {{ getAnalysisSummary() }}
+          </p>
+
+        </div>
+
+
+        <!-- POSSIBLE CAUSE -->
+
+        <div class="analysis-section">
+
+          <h3>
+            Possible Cause
+          </h3>
+
+          <p>
+            {{ getProbableCause() }}
+          </p>
+
+        </div>
+
+
+        <!-- TROUBLESHOOTING -->
+
+        <div class="analysis-section">
+
+          <h3>
+            Troubleshooting Steps
+          </h3>
+
+          <ol
+            class="recommendation-list"
+            *ngIf="getTroubleshootingSteps().length">
+
+            <li
+              *ngFor="let step of getTroubleshootingSteps()">
+
+              {{ step }}
+
+            </li>
+
+          </ol>
+
+          <p
+            *ngIf="!getTroubleshootingSteps().length">
+
+            No troubleshooting steps were returned.
+
+          </p>
+
+        </div>
+
+
+        <!-- POSSIBLE RESOLUTION -->
+
+        <div class="analysis-section resolution-section">
+
+          <h3>
+            Possible Resolution
+          </h3>
+
+          <p>
+            {{ getPossibleResolution() }}
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         AI AGENT
+         ADMIN + AGENT
+         =================================================== -->
+
+    <section
+      class="card"
+      *ngIf="canUseAI()">
+
+      <div class="card-header agent-header">
+
+        <div>
+
+          <div class="card-eyebrow">
+            AI Agent
+          </div>
+
+          <h2>
+            Incident Investigation Agent
+          </h2>
+
+          <p class="card-description">
+            The AI Agent reviews the incident, searches for similar
+            incidents and determines the appropriate investigation action.
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          class="agent-button"
+          (click)="runAgent()"
+          [disabled]="agentLoading">
+
+          {{ agentLoading ? 'Running Agent...' : 'Run AI Agent' }}
+
+        </button>
+
+      </div>
+
+
+      <!-- EMPTY AGENT STATE -->
+
+      <div
+        class="ai-empty"
+        *ngIf="!agentResult">
+
+        <div class="empty-icon">
+          ⚙
+        </div>
+
+        <h3>
+          AI Agent is ready
+        </h3>
+
+        <p>
+          Run the agent to investigate this incident,
+          compare similar incidents and generate a recommended resolution.
+        </p>
+
+      </div>
+
+
+      <!-- AGENT RESULT -->
+
+      <div
+        class="agent-result"
+        *ngIf="agentResult">
+
+
+        <!-- DECISION -->
+
+        <div class="analysis-grid">
+
+          <div class="analysis-item">
+
+            <span class="analysis-label">
+              Agent Decision
+            </span>
+
+            <strong>
+              {{ agentResult.action || 'REVIEW_ONLY' }}
+            </strong>
+
+          </div>
+
+
+          <div class="analysis-item">
+
+            <span class="analysis-label">
+              Confidence
+            </span>
+
+            <strong>
+              {{
+                agentResult.confidence != null
+                  ? ((agentResult.confidence * 100) | number:'1.0-0') + '%'
+                  : '—'
+              }}
+            </strong>
+
+          </div>
+
+
+          <div class="analysis-item">
+
+            <span class="analysis-label">
+              Source
+            </span>
+
+            <strong>
+              {{ agentResult.source || 'FALLBACK' }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- REASON -->
+
+        <div class="analysis-section">
+
+          <h3>
+            Agent Reason
+          </h3>
+
+          <p>
+            {{ agentResult.reason || 'No reason provided.' }}
+          </p>
+
+        </div>
+
+
+        <!-- RESULT -->
+
+        <div class="analysis-section">
+
+          <h3>
+            Agent Result
+          </h3>
+
+          <p>
+            {{ agentResult.result || 'No execution result returned.' }}
+          </p>
+
+        </div>
+
+
+        <!-- RECOMMENDED RESOLUTION -->
+
+        <div class="analysis-section resolution-section">
+
+          <h3>
+            Recommended Resolution
+          </h3>
+
+          <p>
+            {{
+              agentResult.recommendedResolution ||
+              'No recommended resolution was returned.'
+            }}
+          </p>
+
+        </div>
+
+
+        <!-- SIMILAR INCIDENTS -->
+
+        <div class="analysis-section">
+
+          <h3>
+            Similar Incidents
+          </h3>
+
+
+          <div
+            class="similar-incidents"
+            *ngIf="agentResult.similarIncidents?.length">
+
+
+            <div
+              class="similar-incident"
+              *ngFor="let similar of agentResult.similarIncidents">
+
+              <div class="similar-incident-main">
+
+                <strong>
+                  {{ similar.incidentNumber }}
+                </strong>
+
+                <span>
+                  {{ similar.title }}
+                </span>
+
+              </div>
+
+              <span class="similarity-score">
+
+                {{
+                  ((similar.similarity || 0) * 100)
+                    | number:'1.0-0'
+                }}%
+
+                similar
+
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="no-similar-incidents"
+            *ngIf="!agentResult.similarIncidents?.length">
+
+            No similar incidents were found.
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         COMMENTS
+         ADMIN + AGENT
+         =================================================== -->
+
+    <section class="card">
+
+      <div class="card-header">
+
+        <div>
+
+          <div class="card-eyebrow">
+            Collaboration
+          </div>
+
+          <h2>
+            Comments
+          </h2>
+
+          <p class="card-description">
+            Discuss investigation findings and incident updates.
+          </p>
+
+        </div>
+
+        <span class="count-badge">
+          {{ comments.length }}
+        </span>
+
+      </div>
+
+
+      <!-- COMMENT FORM -->
+
+      <div class="comment-form">
+
+        <textarea
+          [(ngModel)]="commentText"
+          placeholder="Add an investigation note or comment..."
+          [disabled]="commentLoading">
+        </textarea>
+
+
+        <div class="comment-form-footer">
+
+          <span class="comment-hint">
+            Comments are visible to incident management users.
+          </span>
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="addComment()"
+            [disabled]="commentLoading || !commentText.trim()">
+
+            {{ commentLoading ? 'Adding...' : 'Add Comment' }}
+
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- COMMENTS LIST -->
+
+      <div
+        class="comments-list"
+        *ngIf="comments.length">
+
+
+        <div
+          class="comment"
+          *ngFor="let comment of comments">
+
+          <div class="comment-avatar">
+            {{
+              getInitials(
+                comment.userName ||
+                comment.authorName ||
+                'User'
+              )
+            }}
+          </div>
+
+
+          <div class="comment-content">
+
+            <div class="comment-meta">
+
+              <strong>
+                {{
+                  comment.userName ||
+                  comment.authorName ||
+                  ('User #' + comment.userId)
+                }}
+              </strong>
+
+              <span>
+                {{
+                  comment.createdAt
+                    | date:'dd MMM yyyy, hh:mm a'
+                }}
+              </span>
+
+            </div>
+
+            <p>
+              {{
+                comment.commentText ||
+                comment.text ||
+                comment.comment ||
+                ''
+              }}
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- EMPTY COMMENTS -->
+
+      <div
+        class="empty-list"
+        *ngIf="!comments.length">
+
+        <h3>
+          No comments yet
+        </h3>
+
+        <p>
+          Add the first investigation note for this incident.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         ACTIVITY TIMELINE
+         ADMIN + AGENT
+         =================================================== -->
+
+    <section class="card">
+
+      <div class="card-header">
+
+        <div>
+
+          <div class="card-eyebrow">
+            Audit Trail
+          </div>
+
+          <h2>
+            Activity Timeline
+          </h2>
+
+          <p class="card-description">
+            Complete history of actions performed on this incident.
+          </p>
+
+        </div>
+
+        <span class="count-badge">
+          {{ activity.length }}
+        </span>
+
+      </div>
+
+
+      <!-- TIMELINE -->
+
+      <div
+        class="timeline"
+        *ngIf="activity.length">
+
+
+        <div
+          class="timeline-item"
+          *ngFor="let event of activity">
+
+
+          <div class="timeline-marker">
+            •
+          </div>
+
+
+          <div class="timeline-content">
+
+            <div class="timeline-header">
+
+              <strong>
+                {{ formatActivityType(event.eventType) }}
+              </strong>
+
+              <span>
+                {{
+                  event.timestamp
+                    | date:'dd MMM yyyy, hh:mm a'
+                }}
+              </span>
+
+            </div>
+
+
+            <div class="timeline-body">
+
+              <span>
+                Actor #{{ event.actorId }}
+              </span>
+
+              <p>
+                {{ formatActivityMetadata(event.metadata) }}
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- EMPTY ACTIVITY -->
+
+      <div
+        class="empty-list"
+        *ngIf="!activity.length">
+
+        <h3>
+          No activity recorded
+        </h3>
+
+        <p>
+          Incident activity will appear here as actions are performed.
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
